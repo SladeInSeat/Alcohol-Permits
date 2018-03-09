@@ -108,7 +108,7 @@ try:
 
         today =  datetime.datetime.now().strftime("%d-%m-%Y")
         subject = 'Alcohol License report ' +  today
-        sendto = "cdglass@wpb.org,jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'
+        sendto = ["cdglass@wpb.org","jssawyer@wpb.org"] # ,'JJudge@wpb.org','NKerr@wpb.org'
         sender = 'scriptmonitorwpb@gmail.com'
         sender_pw = "Bibby1997"
         server = 'smtp.gmail.com'

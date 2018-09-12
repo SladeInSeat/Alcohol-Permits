@@ -9,13 +9,13 @@ import StringIO
 
 
 
-arcpy.env.workspace = r"Database Connections\SDE@Planning.sde"
+arcpy.env.workspace = r"Database Connections\SDE@Planning_CLUSTER.sde"
 arcpy.env.overwriteOutput = True
-db_conn = r"Database Connections\SDE@Planning.sde"
+db_conn = r"Database Connections\SDE@Planning_CLUSTER.sde"
 
 
 #   data
-ComPlus_BusiLic = r"Database Connections\GISUSER@comprod.sde\COMPLUS.WPB_ALL_BUSINESSLICENSES"
+ComPlus_BusiLic = r"Database Connections\COMMPLUS.sde\COMPLUS.WPB_ALL_BUSINESSLICENSES"
 Planning_AlcoLic = r"Planning.SDE.WPB_GIS_ALCOHOL_LICENSES"
 Fields = [Field.baseName.encode('ascii') for Field in arcpy.ListFields(Planning_AlcoLic)]
 Fields_lessObjID = Fields[1:]
@@ -23,8 +23,8 @@ query_layer = "ALCOLICENCE_QL"
 alco_licence_poly = "Alco_licence_poly"
 alco_license_points = "Alco_license_points"
 alco_license ="AlcoholLicense_complus"
-spatialref = arcpy.Describe(r"Database Connections\SDE@Planning.sde\Planning.SDE.LandUsePlanning").spatialReference.exportToString()
-TempTable = r"Database Connections\SDE@Planning.sde\Planning.SDE.TempTable"
+spatialref = arcpy.Describe(r"Database Connections\SDE@Planning_CLUSTER.sde\Planning.SDE.LandUsePlanning").spatialReference.exportToString()
+TempTable = r"Database Connections\SDE@Planning_CLUSTER.sde\Planning.SDE.TempTable"
 Sql_copytable = "CATEGORY IN  ('AAM','445310','424810','312130','424820','445310','722410','312120','312140') AND STAT IN ('ACTIVE','PRINTED','HOLD')"
 
 
@@ -108,7 +108,7 @@ try:
 
         today =  datetime.datetime.now().strftime("%d-%m-%Y")
         subject = 'Alcohol License report ' +  today
-        sendto = ["cdglass@wpb.org","jssawyer@wpb.org"] # ,'JJudge@wpb.org','NKerr@wpb.org'
+        sendto = ["cdglass@wpb.org","jssawyer@wpb.org"]
         sender = 'scriptmonitorwpb@gmail.com'
         sender_pw = "Bibby1997"
         server = 'smtp.gmail.com'

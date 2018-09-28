@@ -57,9 +57,8 @@ try:
             log.write(now + " no new alcohol licenses found\n\n")
 
     else:
-        arcpy.AcceptConnections(db_conn,True)
-        arcpy.DisconnectUser(db_conn,'ALL')
-        arcpy.AcceptConnections(db_conn,False)
+        arcpy.DisconnectUser(db_conn, 'ALL')
+        arcpy.AcceptConnections(db_conn, False)
         #   change list to a tuple (in prepartation of creating a text string for the query). Delta is in unicode, need it in plain ascii text for query
 
         InComplus_NotInSDE = {x[0].encode('ascii') for x in InComplus_NotInSDE} # set comprehension to reformat to ascii
@@ -131,15 +130,14 @@ try:
         for fc in del_list:
             arcpy.Delete_management(fc)
 
-
-    arcpy.AcceptConnections(db_conn,True)
-
   #   This section will delete from alcohol_license_complus and Planning.SDE.WPB_GIS_ALCOHOL_LICENSES any records that exists in Planning SDE but not in Complus (probably due to status change in complus)
     if len(InSDE_NotInComplus) == 0:
         print 'InSDE_NotInComplus = 0'
         print 'line 162'
 
     else:
+        arcpy.DisconnectUser(db_conn, 'ALL')
+        arcpy.AcceptConnections(db_conn, False)
         InSDE_comprehension = {record[0].encode('ascii').rstrip() for record in InSDE_NotInComplus}
         InSDE_query_tup = tuple(InSDE_comprehension)
         print InSDE_query_tup
@@ -205,3 +203,6 @@ except Exception as E:
     gmail.quit()
 
     print body_text
+
+finally:
+    arcpy.AcceptConnections(db_conn, True)

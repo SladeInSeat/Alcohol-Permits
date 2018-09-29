@@ -197,7 +197,6 @@ try:
             log.write("\n")
 
 except Exception as E:
-
     today = datetime.datetime.now().strftime("%m-%d-%Y")
     subject = 'Alcohol License script failure report ' + today
     sendto = "jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'

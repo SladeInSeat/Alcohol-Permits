@@ -53,12 +53,14 @@ try:
     #       table and Planning.SDE.AlcoholLicense_complus feature class
 
     if len(InComplus_NotInSDE) == 0:
+        print 'no new alcohol license found'
         with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
             now = datetime.datetime.now().strftime("%m-%d-%Y")
             log.write("\n-----------------\n")
             log.write(now + " no new alcohol licenses found\n\n")
 
     else:
+        print 'new alcohol license found in complus, adding'
         arcpy.DisconnectUser(db_conn, 'ALL')
         arcpy.AcceptConnections(db_conn, False)
         #   change list to a tuple (in preparation of creating a text string for the query). Delta is in unicode, need
@@ -137,10 +139,10 @@ try:
     #   exists in Planning SDE but not in Complus (probably due to status change in complus)
 
     if len(InSDE_NotInComplus) == 0:
-        print 'InSDE_NotInComplus = 0'
-        print 'line 141'
+        print 'All licenses in SDE found in Commplus, no deletions needed'
 
     else:
+        print 'Licenses found in SDE that dne is Commplus, deleting from SDE'
         arcpy.DisconnectUser(db_conn, 'ALL')
         arcpy.AcceptConnections(db_conn, False)
         InSDE_comprehension = {record[0].encode('ascii').rstrip() for record in InSDE_NotInComplus}

@@ -55,7 +55,7 @@ try:
         #   change list to a tuple (in prepartation of creating a text string for the query). Delta is in unicode, need
         #   it in plain ascii text for query
 
-        InComplus_NotInSDE = {x[0].encode('ascii') for x in InComplus_NotInSDE} # set comprehension to reformat to ascii
+        InComplus_NotInSDE = {license[0].encode('ascii') for license in InComplus_NotInSDE} # set comprehension to reformat to ascii
         InComplus_NotInSDE_tup = tuple(InComplus_NotInSDE)
 
         #   save the query as a string
@@ -148,7 +148,6 @@ try:
             arcpy.DeleteRows_management(alco_license_tblview)
         else:
             print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 173"
-        arcpy.AcceptConnections(db_conn,True)
 
         today =  datetime.datetime.now().strftime("%d-%m-%Y")
         subject = 'Alcohol Liicense deleted licenses ' +  today
@@ -160,8 +159,8 @@ try:
 
         gmail = smtplib.SMTP(server, 587)
         gmail.starttls()
-        gmail.login(sender,sender_pw)
-        gmail.sendmail(sender,sendto,body_text)
+        gmail.login(sender, sender_pw)
+        gmail.sendmail(sender, sendto, body_text)
         gmail.quit()
 
         with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt","a") as log:
@@ -174,10 +173,9 @@ try:
             log.write("\n")
 
 except Exception as E:
-    arcpy.AcceptConnections(db_conn,True)
 
-    today =  datetime.datetime.now().strftime("%m-%d-%Y")
-    subject = 'Alcohol License script failure report ' +  today
+    today = datetime.datetime.now().strftime("%m-%d-%Y")
+    subject = 'Alcohol License script failure report ' + today
     sendto = "jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'
     sender = 'scriptmonitorwpb@gmail.com'
     sender_pw = "Bibby1997"
@@ -187,8 +185,8 @@ except Exception as E:
 
     gmail = smtplib.SMTP(server, 587)
     gmail.starttls()
-    gmail.login(sender,sender_pw)
-    gmail.sendmail(sender,sendto,body_text)
+    gmail.login(sender, sender_pw)
+    gmail.sendmail(sender, sendto, body_text)
     gmail.quit()
 
     print body_text

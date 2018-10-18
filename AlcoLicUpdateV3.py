@@ -64,13 +64,10 @@ try:
         #   it in plain ascii text for query
 
         InComplus_NotInSDE_tuple = tuple({license[0].encode('ascii') for license in InComplus_NotInSDE})
-        print "len incomplusnotinsdetuple: {}".format(str(len(InComplus_NotInSDE_tuple)))
         if len(InComplus_NotInSDE_tuple) == 1:
-            sqlquery = "LICENSE = {}".format(InComplus_NotInSDE_tuple[0])
+            sqlquery = "LICENSE = '{}'".format(InComplus_NotInSDE_tuple[0])
         else:
             sqlquery = "LICENSE IN {}".format(InComplus_NotInSDE_tuple)
-
-        sqlquery = "LICENSE IN {}".format(InComplus_NotInSDE_tup)
 
         #   it doesnt like insert cursor, so make a temp table and append to that, then append to GIS_ALCOHOL_LICENSES
 
@@ -121,15 +118,15 @@ try:
         body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list of the new licenses." \
                     "\nThese have been added to AlcoholLicense_complus:\n\nPCN\t\tLicense Number\t" \
                     "Business Name\tAddress\n\n{3}".format(sender, sendto, subject, report)
-
-        gmail = smtplib.SMTP(server, 587)
-        gmail.starttls()
-        gmail.login(sender, sender_pw)
-        gmail.sendmail(sender, sendto, body_text)
-        gmail.quit()
+        #
+        # gmail = smtplib.SMTP(server, 587)
+        # gmail.starttls()
+        # gmail.login(sender, sender_pw)
+        # gmail.sendmail(sender, sendto, body_text)
+        # gmail.quit()
 
         with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
-            now = datetime.datetime.now().strftime("%Y-%d-%m")
+            now = datetime.datetime.now().strftime("%d-%m-%Y")
             log.write("\n------------------------------------------\n\n")
             log.write(now)
             log.write('\n')
@@ -188,7 +185,7 @@ try:
         gmail.quit()
 
         with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
-            now = datetime.datetime.now().strftime("%m-%d-%Y")
+            now = datetime.datetime.now().strftime("%d-%m-%Y")
             log.write("\n------------------------------------------\n\n")
             log.write(now)
             log.write('\n')
@@ -197,7 +194,7 @@ try:
             log.write("\n")
 
 except Exception as E:
-    today = datetime.datetime.now().strftime("%m-%d-%Y")
+    today = datetime.datetime.now().strftime("%d-%m-%Y")
     subject = 'Alcohol License script failure report ' + today
     sendto = "jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'
     sender = 'scriptmonitorwpb@gmail.com'

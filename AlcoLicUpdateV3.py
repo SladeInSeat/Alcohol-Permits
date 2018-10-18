@@ -21,7 +21,6 @@ alco_license_points = "Alco_license_points"
 alco_license = "AlcoholLicense_complus"
 spatialref = arcpy.Describe(r"Database Connections\SDE@Planning_CLUSTER.sde\Planning.SDE.LandUsePlanning").\
                               spatialReference.exportToString()
-TempTable = r"Database Connections\SDE@Planning_CLUSTER.sde\Planning.SDE.TempTable"
 Planning_Alcohol_License_fullpath = r"Database Connections\SDE@Planning_CLUSTER.sde\Planning.SDE." \
                                     r"WPB_GIS_ALCOHOL_LICENSES"
 
@@ -61,19 +60,21 @@ try:
 
     else:
         print 'new alcohol license found in complus, adding'
-        arcpy.DisconnectUser(db_conn, 'ALL')
-        arcpy.AcceptConnections(db_conn, False)
         #   change list to a tuple (in preparation of creating a text string for the query). Delta is in unicode, need
         #   it in plain ascii text for query
 
-        InComplus_NotInSDE = {license[0].encode('ascii') for license in InComplus_NotInSDE}  # reformat to ascii
-        InComplus_NotInSDE_tup = tuple(InComplus_NotInSDE)
+        InComplus_NotInSDE_tuple = tuple({license[0].encode('ascii') for license in InComplus_NotInSDE})
+        print "len incomplusnotinsdetuple: {}".format(str(len(InComplus_NotInSDE_tuple)))
+        if len(InComplus_NotInSDE_tuple) == 1:
+            sqlquery = "LICENSE = {}".format(InComplus_NotInSDE_tuple[0])
+        else:
+            sqlquery = "LICENSE IN {}".format(InComplus_NotInSDE_tuple)
 
         sqlquery = "LICENSE IN {}".format(InComplus_NotInSDE_tup)
 
         #   it doesnt like insert cursor, so make a temp table and append to that, then append to GIS_ALCOHOL_LICENSES
 
-        arcpy.CreateTable_management(db_conn, "TempTable", Planning_AlcoLic)
+        TempTable = arcpy.CreateTable_management("in_memory", "TempTable", Planning_AlcoLic)
 
         with arcpy.da.SearchCursor(ComPlus_BusiLic, Fields_lessObjID, sqlquery) as sc:
             with arcpy.da.InsertCursor(TempTable, Fields_lessObjID) as ic:
@@ -104,7 +105,7 @@ try:
 
         TT_fieldnames =['PARCEL_ID', 'LICENSE', 'BUS_NAME', 'ADRS1']
         string_obj = StringIO.StringIO()
-        with arcpy.da.SearchCursor(TempTable,TT_fieldnames) as TTSC:
+        with arcpy.da.SearchCursor(TempTable, TT_fieldnames) as TTSC:
             for row in TTSC:
                 string_obj.write(''.join(row))
                 string_obj.write('\n')
@@ -140,15 +141,14 @@ try:
 
     if len(InSDE_NotInComplus) == 0:
         print 'All licenses in SDE found in Commplus, no deletions needed'
-
     else:
         print 'Licenses found in SDE that dne is Commplus, deleting from SDE'
-        arcpy.DisconnectUser(db_conn, 'ALL')
-        arcpy.AcceptConnections(db_conn, False)
-        InSDE_comprehension = {record[0].encode('ascii').rstrip() for record in InSDE_NotInComplus}
-        InSDE_query_tup = tuple(InSDE_comprehension)
+        InSDE_query_tup = tuple({record[0].encode('ascii').rstrip() for record in InSDE_NotInComplus})
         print InSDE_query_tup
-        InSDE_query = "LICENSE IN {}".format(InSDE_query_tup)
+        if len(InSDE_query_tup) == 1:
+            InSDE_query = "LICENSE = '{}'".format(InSDE_query_tup[0])
+        else:
+            InSDE_query = "LICENSE IN {}".format(InSDE_query_tup)
         print InSDE_query
         alco_license_lyr = arcpy.MakeFeatureLayer_management(alco_license, 'alco_license_lyr')
         arcpy.SelectLayerByAttribute_management(alco_license_lyr, "NEW_SELECTION", InSDE_query)
@@ -159,17 +159,17 @@ try:
         if int(arcpy.GetCount_management(alco_license_lyr)[0]) == (len(InSDE_NotInComplus)):
             arcpy.DeleteFeatures_management(alco_license_lyr)
         else:
-            print "count of selected records in alco_license_lyr != len(InSDE_notInComplus) line 166"
+            print "count of selected records in alco_license_lyr != len(InSDE_notInComplus) line 159"
         alco_license_tblview = arcpy.MakeTableView_management(Planning_Alcohol_License_fullpath, 'alco_license_tblview')
         arcpy.SelectLayerByAttribute_management(alco_license_tblview, "NEW_SELECTION", InSDE_query)
-        print "not in complus: {}".format(len(InSDE_NotInComplus) - 1)
+        print "not in complus: {}".format(len(InSDE_NotInComplus))
         print "get count of Planning.SDE.WPB_GIS_ALCOHOL_LICENSES: ", arcpy.GetCount_management(alco_license_tblview)
         #   following logic ensures there is a selection whose quantity equals number of licenses to remove so that
         #   DeleteFeatures doesnt delete entire fc
         if int(arcpy.GetCount_management(alco_license_tblview)[0]) == (len(InSDE_NotInComplus)):
             arcpy.DeleteRows_management(alco_license_tblview)
         else:
-            print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 173"
+            print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 169"
 
         today = datetime.datetime.now().strftime("%d-%m-%Y")
         subject = 'Alcohol License App deleted licenses ' + today
@@ -187,13 +187,13 @@ try:
         gmail.sendmail(sender, sendto, body_text)
         gmail.quit()
 
-        with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt","a") as log:
+        with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
             now = datetime.datetime.now().strftime("%m-%d-%Y")
             log.write("\n------------------------------------------\n\n")
             log.write(now)
             log.write('\n')
             log.write('This license has been deleted:')
-            log.write(", ").join([str(obj) for obj in InSDE_NotInComplus])
+            log.write(", ").join(InSDE_NotInComplus)
             log.write("\n")
 
 except Exception as E:
@@ -204,7 +204,7 @@ except Exception as E:
     sender_pw = "Bibby1997"
     server = 'smtp.gmail.com'
     log = traceback.format_exc()
-    body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nAn error occured. Here are the Type, arguements, and log of " \
+    body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nAn error occured. Here are the Type, arguments, and log of " \
                 "the error\n\n{3}\n{4}\n{5}".format(sender, sendto, subject,type(E).__name__, E.args, log)
 
     gmail = smtplib.SMTP(server, 587)
@@ -217,6 +217,6 @@ except Exception as E:
 
 finally:
     arcpy.AcceptConnections(db_conn, True)
-    del_list = (TempTable, alco_licence_poly, alco_license_points)
+    del_list = (alco_licence_poly, alco_license_points)
     for fc in del_list:
         arcpy.Delete_management(fc)

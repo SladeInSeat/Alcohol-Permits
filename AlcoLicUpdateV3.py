@@ -108,7 +108,7 @@ try:
 
         report = string_obj.getvalue()
 
-        today = datetime.datetime.now().strftime("%d-%m-%Y")
+        today = datetime.datetime.now().strftime("%m-%d-%Y")
         subject = 'Alcohol License report ' + today
         sendto = ["cdglass@wpb.org","jssawyer@wpb.org"]
         sender = 'scriptmonitorwpb@gmail.com'
@@ -160,7 +160,7 @@ try:
         else:
             print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 164"
 
-        today = datetime.datetime.now().strftime("%d-%m-%Y")
+        today = datetime.datetime.now().strftime("%m-%d-%Y")
         subject = 'Alcohol License App deleted licenses ' + today
         sendto = ['cdglass@wpb.org','jssawyer@wpb.org']  # ,'JJudge@wpb.org','NKerr@wpb.org'
         sender = 'scriptmonitorwpb@gmail.com'
@@ -177,16 +177,16 @@ try:
         gmail.quit()
 
         with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
-            now = datetime.datetime.now().strftime("%d-%m-%Y")
+            now = datetime.datetime.now().strftime("%m-%d-%Y")
             log.write("\n------------------------------------------\n\n")
             log.write(now)
             log.write('\n')
             log.write('This license has been deleted:')
-            log.write(", ").join(InSDE_query_tup)
+            log.write(str(InSDE_query_tup))
             log.write("\n")
 
 except Exception as E:
-    today = datetime.datetime.now().strftime("%d-%m-%Y")
+    today = datetime.datetime.now().strftime("%m-%d-%Y")
     subject = 'Alcohol License script failure report ' + today
     sendto = "jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'
     sender = 'scriptmonitorwpb@gmail.com'

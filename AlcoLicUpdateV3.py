@@ -8,7 +8,6 @@ import StringIO
 arcpy.env.workspace = r"Database Connections\SDE@Planning_CLUSTER.sde"
 arcpy.env.overwriteOutput = True
 
-
 #   data
 db_conn = r"Database Connections\SDE@Planning_CLUSTER.sde"
 ComPlus_BusiLic = r"Database Connections\COMMPLUS.sde\COMPLUS.WPB_ALL_BUSINESSLICENSES"
@@ -118,12 +117,12 @@ try:
         body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list of the new licenses." \
                     "\nThese have been added to AlcoholLicense_complus:\n\nPCN\t\tLicense Number\t" \
                     "Business Name\tAddress\n\n{3}".format(sender, sendto, subject, report)
-        #
-        # gmail = smtplib.SMTP(server, 587)
-        # gmail.starttls()
-        # gmail.login(sender, sender_pw)
-        # gmail.sendmail(sender, sendto, body_text)
-        # gmail.quit()
+
+        gmail = smtplib.SMTP(server, 587)
+        gmail.starttls()
+        gmail.login(sender, sender_pw)
+        gmail.sendmail(sender, sendto, body_text)
+        gmail.quit()
 
         with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
             now = datetime.datetime.now().strftime("%d-%m-%Y")
@@ -146,27 +145,20 @@ try:
             InSDE_query = "LICENSE = '{}'".format(InSDE_query_tup[0])
         else:
             InSDE_query = "LICENSE IN {}".format(InSDE_query_tup)
-        print InSDE_query
         alco_license_lyr = arcpy.MakeFeatureLayer_management(alco_license, 'alco_license_lyr')
         arcpy.SelectLayerByAttribute_management(alco_license_lyr, "NEW_SELECTION", InSDE_query)
-        print "count of not in complus: ", len(InSDE_NotInComplus)
-        print "get count of AlcoholLicense_complus: ", arcpy.GetCount_management(alco_license_lyr)
         #   following logic ensures there is a selection whose quantity equals number of licenses to remove so that
         #   DeleteFeatures doesn't delete entire fc. That's never happened. ever.
         if int(arcpy.GetCount_management(alco_license_lyr)[0]) == (len(InSDE_NotInComplus)):
             arcpy.DeleteFeatures_management(alco_license_lyr)
         else:
-            print "count of selected records in alco_license_lyr != len(InSDE_notInComplus) line 159"
+            print "count of selected records in alco_license_lyr != len(InSDE_notInComplus) line 156"
         alco_license_tblview = arcpy.MakeTableView_management(Planning_Alcohol_License_fullpath, 'alco_license_tblview')
         arcpy.SelectLayerByAttribute_management(alco_license_tblview, "NEW_SELECTION", InSDE_query)
-        print "not in complus: {}".format(len(InSDE_NotInComplus))
-        print "get count of Planning.SDE.WPB_GIS_ALCOHOL_LICENSES: ", arcpy.GetCount_management(alco_license_tblview)
-        #   following logic ensures there is a selection whose quantity equals number of licenses to remove so that
-        #   DeleteFeatures doesnt delete entire fc
         if int(arcpy.GetCount_management(alco_license_tblview)[0]) == (len(InSDE_NotInComplus)):
             arcpy.DeleteRows_management(alco_license_tblview)
         else:
-            print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 169"
+            print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 164"
 
         today = datetime.datetime.now().strftime("%d-%m-%Y")
         subject = 'Alcohol License App deleted licenses ' + today
@@ -176,7 +168,7 @@ try:
         server = 'smtp.gmail.com'
         body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list license numbers of the deleted records." \
                     "\nThese have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
-                    "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:\n{3}".format(sender, sendto, subject,InSDE_query_tup)
+                    "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:\n{3}".format(sender, sendto, subject, InSDE_query_tup)
 
         gmail = smtplib.SMTP(server, 587)
         gmail.starttls()
@@ -190,7 +182,7 @@ try:
             log.write(now)
             log.write('\n')
             log.write('This license has been deleted:')
-            log.write(", ").join(InSDE_NotInComplus)
+            log.write(", ").join(InSDE_query_tup)
             log.write("\n")
 
 except Exception as E:
@@ -213,7 +205,6 @@ except Exception as E:
     print body_text
 
 finally:
-    arcpy.AcceptConnections(db_conn, True)
     del_list = (alco_licence_poly, alco_license_points)
     for fc in del_list:
         arcpy.Delete_management(fc)

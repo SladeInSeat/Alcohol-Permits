@@ -108,15 +108,15 @@ try:
 
         report = string_obj.getvalue()
 
-        today = datetime.datetime.now().strftime("%m-%d-%Y")
+        today = datetime.datetime.now().strftime("%m-%d-%Y" )
         subject = 'Alcohol License report ' + today
         sendto = ["cdglass@wpb.org","jssawyer@wpb.org"]
         sender = 'scriptmonitorwpb@gmail.com'
         sender_pw = "Bibby1997"
         server = 'smtp.gmail.com'
         body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list of the new licenses." \
-                    "\nThese have been added to AlcoholLicense_complus:\n\nPCN\t\tLicense Number\t" \
-                    "Business Name\tAddress\n\n{3}".format(sender, sendto, subject, report)
+                    "\nThese have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t" \
+                    "Business Name\t\tAddress\n\n{3}".format(sender, sendto, subject, report)
 
         gmail = smtplib.SMTP(server, 587)
         gmail.starttls()

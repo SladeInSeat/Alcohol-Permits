@@ -125,7 +125,7 @@ try:
         gmail.quit()
 
         with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
-            now = datetime.datetime.now().strftime("%d-%m-%Y")
+            now = datetime.datetime.now().strftime("%m-%d-%Y")
             log.write("\n------------------------------------------\n\n")
             log.write(now)
             log.write('\n')

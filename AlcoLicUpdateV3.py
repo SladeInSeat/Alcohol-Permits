@@ -111,25 +111,9 @@ def main():
 
             sendMail('Alcohol License report',
                      ["cdglass@wpb.org", "jssawyer@wpb.org"],
-                     "These have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t" \
+                     "These have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t"
                         "Business Name\t\tAddress",
                      report)
-            #
-            # today = datetime.datetime.now().strftime("%m-%d-%Y" )
-            # subject = 'Alcohol License report ' + today
-            # sendto = ["cdglass@wpb.org","jssawyer@wpb.org"]
-            # sender = 'scriptmonitorwpb@gmail.com'
-            # sender_pw = "Bibby1997"
-            # server = 'smtp.gmail.com'
-            # body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list of the new licenses." \
-            #             "\nThese have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t" \
-            #             "Business Name\t\tAddress\n\n{3}".format(sender, sendto, subject, report)
-            #
-            # gmail = smtplib.SMTP(server, 587)
-            # gmail.starttls()
-            # gmail.login(sender, sender_pw)
-            # gmail.sendmail(sender, sendto, body_text)
-            # gmail.quit()
 
             with open(logfile, "a") as log:
                 now = datetime.datetime.now().strftime("%m-%d-%Y")
@@ -169,27 +153,9 @@ def main():
 
             sendMail("Alcohol License App deleted licenses",
                  ['cdglass@wpb.org', 'jssawyer@wpb.org'],
-                 "These have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
+                 "These have been deleted from Planning.SDE.AlcoholLicense_complus feature class and "
                     "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:",
                  "{}".format(InSDE_query_tup))
-
-
-
-            # today = datetime.datetime.now().strftime("%m-%d-%Y")
-            # subject = 'Alcohol License App deleted licenses ' + today
-            # sendto = ['cdglass@wpb.org','jssawyer@wpb.org']  # ,'JJudge@wpb.org','NKerr@wpb.org'
-            # sender = 'scriptmonitorwpb@gmail.com'
-            # sender_pw = "Bibby1997"
-            # server = 'smtp.gmail.com'
-            # body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list license numbers of the deleted records." \
-            #             "\nThese have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
-            #             "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:\n{3}".format(sender, sendto, subject, InSDE_query_tup)
-            #
-            # gmail = smtplib.SMTP(server, 587)
-            # gmail.starttls()
-            # gmail.login(sender, sender_pw)
-            # gmail.sendmail(sender, sendto, body_text)
-            # gmail.quit()
 
             with open(logfile, "a") as log:
                 now = datetime.datetime.now().strftime("%m-%d-%Y")
@@ -206,27 +172,10 @@ def main():
                  "An error occurred. Here are the Type, arguments, and log of the errors",
                  "\n{0}\n{1}\n{2}".format(type(E).__name__ ,E.args,traceback.format_exc()))
 
-        # today = datetime.datetime.now().strftime("%m-%d-%Y")
-        # subject = 'Alcohol License script failure report ' + today
-        # sendto = "jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'
-        # sender = 'scriptmonitorwpb@gmail.com'
-        # sender_pw = "Bibby1997"
-        # server = 'smtp.gmail.com'
-        # log = traceback.format_exc()
-        # body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nAn error occured. Here are the Type, arguments, and log of " \
-        #             "the error\n\n{3}\n{4}\n{5}".format(sender, sendto, subject,type(E).__name__, E.args, log)
-        #
-        # gmail = smtplib.SMTP(server, 587)
-        # gmail.starttls()
-        # gmail.login(sender, sender_pw)
-        # gmail.sendmail(sender, sendto, body_text)
-        # gmail.quit()
-
     finally:
         del_list = (alco_licence_poly, alco_license_points)
         for fc in del_list:
             arcpy.Delete_management(fc)
-
 
 
 def sendMail(subject_param, sendto_param, body_text_param, report_param):

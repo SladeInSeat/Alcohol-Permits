@@ -22,189 +22,228 @@ spatialref = arcpy.Describe(r"Database Connections\SDE@Planning_CLUSTER.sde\Plan
                               spatialReference.exportToString()
 Planning_Alcohol_License_fullpath = r"Database Connections\SDE@Planning_CLUSTER.sde\Planning.SDE." \
                                     r"WPB_GIS_ALCOHOL_LICENSES"
-
+logfile = r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt"
 #   following query created with help from Planning Dept. For details on value meanings, ask them.
 Sql_copytable = "CATEGORY IN  ('AAM','445310','424810','312130','424820','445310','722410','312120','312140') AND" \
                 " STAT IN ('ACTIVE','PRINTED','HOLD')"
 
-try:
-    # create sets of license numbers from Community Plus and corresponding table in GIS Cluster
-    ComplusLicenses_set = set()
-    PlanningLicenses_set = set()
+def main():
+    try:
+        # create sets of license numbers from Community Plus and corresponding table in GIS Cluster
+        ComplusLicenses_set = set()
+        PlanningLicenses_set = set()
 
-    with arcpy.da.SearchCursor(ComPlus_BusiLic, 'LICENSE', Sql_copytable) as ComplusSC:
-        for record in ComplusSC:
-            ComplusLicenses_set.add(record)
+        with arcpy.da.SearchCursor(ComPlus_BusiLic, 'LICENSE', Sql_copytable) as ComplusSC:
+            for record in ComplusSC:
+                ComplusLicenses_set.add(record)
 
-    with arcpy.da.SearchCursor(Planning_AlcoLic, 'LICENSE') as PlanAlcSC:
-        for record in PlanAlcSC:
-            PlanningLicenses_set.add(record)
+        with arcpy.da.SearchCursor(Planning_AlcoLic, 'LICENSE') as PlanAlcSC:
+            for record in PlanAlcSC:
+                PlanningLicenses_set.add(record)
 
-    #   Compare the two sets, perform set calculations to discover differences (if any)
+        #   Compare the two sets, perform set calculations to discover differences (if any)
 
-    InComplus_NotInSDE = ComplusLicenses_set.difference(PlanningLicenses_set)
-    InSDE_NotInComplus = PlanningLicenses_set.difference(ComplusLicenses_set)
+        InComplus_NotInSDE = ComplusLicenses_set.difference(PlanningLicenses_set)
+        InSDE_NotInComplus = PlanningLicenses_set.difference(ComplusLicenses_set)
 
-    #   If InComplus_NotInSDE has members, then proceed to append record to GIS_ALCOHOL_LICENSES, and create a point
-    #       fc of record and append to AlcoholLicense_complus
-    #   If InSDE_NotInComplus has members, then proceed to delete records from Planning.SDE.WPB_GIS_ALCOHOL_LICENSES
-    #       table and Planning.SDE.AlcoholLicense_complus feature class
+        #   If InComplus_NotInSDE has members, then proceed to append record to GIS_ALCOHOL_LICENSES, and create a point
+        #       fc of record and append to AlcoholLicense_complus
+        #   If InSDE_NotInComplus has members, then proceed to delete records from Planning.SDE.WPB_GIS_ALCOHOL_LICENSES
+        #       table and Planning.SDE.AlcoholLicense_complus feature class
 
-    if len(InComplus_NotInSDE) == 0:
-        print 'no new alcohol license found'
-        with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
-            now = datetime.datetime.now().strftime("%m-%d-%Y")
-            log.write("\n-----------------\n")
-            log.write(now + " no new alcohol licenses found\n\n")
+        if len(InComplus_NotInSDE) == 0:
+            print 'no new alcohol license found'
+            with open(logfile, "a") as log:
+                now = datetime.datetime.now().strftime("%m-%d-%Y")
+                log.write("\n-----------------\n")
+                log.write(now + " no new alcohol licenses found\n\n")
 
-    else:
-        print 'new alcohol license found in complus, adding'
-        #   change list to a tuple (in preparation of creating a text string for the query). Delta is in unicode, need
-        #   it in plain ascii text for query
-
-        InComplus_NotInSDE_tuple = tuple({license[0].encode('ascii') for license in InComplus_NotInSDE})
-        if len(InComplus_NotInSDE_tuple) == 1:
-            sqlquery = "LICENSE = '{}'".format(InComplus_NotInSDE_tuple[0])
         else:
-            sqlquery = "LICENSE IN {}".format(InComplus_NotInSDE_tuple)
+            print 'new alcohol license found in complus, adding'
+            #   change list to a tuple (in preparation of creating a text string for the query). Delta is in unicode, need
+            #   it in plain ascii text for query
 
-        #   it doesnt like insert cursor, so make a temp table and append to that, then append to GIS_ALCOHOL_LICENSES
+            InComplus_NotInSDE_tuple = tuple({license[0].encode('ascii') for license in InComplus_NotInSDE})
+            if len(InComplus_NotInSDE_tuple) == 1:
+                sqlquery = "LICENSE = '{}'".format(InComplus_NotInSDE_tuple[0])
+            else:
+                sqlquery = "LICENSE IN {}".format(InComplus_NotInSDE_tuple)
 
-        TempTable = arcpy.CreateTable_management("in_memory", "TempTable", Planning_AlcoLic)
+            #   it doesnt like insert cursor, so make a temp table and append to that, then append to GIS_ALCOHOL_LICENSES
 
-        with arcpy.da.SearchCursor(ComPlus_BusiLic, Fields_lessObjID, sqlquery) as sc:
-            with arcpy.da.InsertCursor(TempTable, Fields_lessObjID) as ic:
-                for record in sc:
-                    ic.insertRow(record)
+            TempTable = arcpy.CreateTable_management("in_memory", "TempTable", Planning_AlcoLic)
 
-        arcpy.Append_management(TempTable, Planning_AlcoLic)
+            with arcpy.da.SearchCursor(ComPlus_BusiLic, Fields_lessObjID, sqlquery) as sc:
+                with arcpy.da.InsertCursor(TempTable, Fields_lessObjID) as ic:
+                    for record in sc:
+                        ic.insertRow(record)
 
-        #   THe following block creates a Query Layer from a join between the new licenses identified earlier and the
-        #   parcels in which they reside, saves the Query layer as a polygon fc...
-        #   changes that to point fc, then appends the points to AlcoholLicense_complus
+            arcpy.Append_management(TempTable, Planning_AlcoLic)
 
-        sql = "SELECT PARCELS.[OBJECTID],[OWNPARCELID] AS PARCELS_PCN,[SRCREF],[OWNTYPE]," \
-              "[GISdata_GISADMIN_OwnerParcel_AR],[LASTUPDATE],[LASTEDITOR],[Shape],[PARCEL_ID] AS COMPLUS_PCN," \
-              "[BUSINESS_ID],[LICENSE],[CATEGORY],[CATEGORY_DESC],[STAT],[ISSUE],[EXPIRATION],[BUS_ENTITY_ID]," \
-              "[BUS_NAME],[BUS_PROD],[SERVICE],[ADRS1],[BUS_PHONE],[BUS_EMAIL]" \
-              " FROM [Planning].[sde].[PLANNINGPARCELS] PARCELS,[Planning].[sde].[WPB_GIS_ALCOHOL_LICENSES] ALCOLIC" \
-              " WHERE PARCELS.OWNPARCELID = ALCOLIC.PARCEL_ID AND {}".format(sqlquery)
+            #   THe following block creates a Query Layer from a join between the new licenses identified earlier and the
+            #   parcels in which they reside, saves the Query layer as a polygon fc...
+            #   changes that to point fc, then appends the points to AlcoholLicense_complus
 
-        arcpy.MakeQueryLayer_management(input_database=db_conn, out_layer_name=query_layer, query=sql,
-                                        oid_fields="OBJECTID", shape_type="POLYGON", srid="2881",
-                                        spatial_reference=spatialref)
-        arcpy.management.CopyFeatures(query_layer, alco_licence_poly, None, None, None, None)
-        arcpy.FeatureToPoint_management(alco_licence_poly, alco_license_points, "INSIDE")
-        arcpy.Append_management(alco_license_points, alco_license)
+            sql = "SELECT PARCELS.[OBJECTID],[OWNPARCELID] AS PARCELS_PCN,[SRCREF],[OWNTYPE]," \
+                  "[GISdata_GISADMIN_OwnerParcel_AR],[LASTUPDATE],[LASTEDITOR],[Shape],[PARCEL_ID] AS COMPLUS_PCN," \
+                  "[BUSINESS_ID],[LICENSE],[CATEGORY],[CATEGORY_DESC],[STAT],[ISSUE],[EXPIRATION],[BUS_ENTITY_ID]," \
+                  "[BUS_NAME],[BUS_PROD],[SERVICE],[ADRS1],[BUS_PHONE],[BUS_EMAIL]" \
+                  " FROM [Planning].[sde].[PLANNINGPARCELS] PARCELS,[Planning].[sde].[WPB_GIS_ALCOHOL_LICENSES] ALCOLIC" \
+                  " WHERE PARCELS.OWNPARCELID = ALCOLIC.PARCEL_ID AND {}".format(sqlquery)
 
-        #   Create the alert email text. Uses StringIO to create a string treated as a file for formatting purposes
+            arcpy.MakeQueryLayer_management(input_database=db_conn, out_layer_name=query_layer, query=sql,
+                                            oid_fields="OBJECTID", shape_type="POLYGON", srid="2881",
+                                            spatial_reference=spatialref)
+            arcpy.management.CopyFeatures(query_layer, alco_licence_poly, None, None, None, None)
+            arcpy.FeatureToPoint_management(alco_licence_poly, alco_license_points, "INSIDE")
+            arcpy.Append_management(alco_license_points, alco_license)
 
-        TT_fieldnames =['PARCEL_ID', 'LICENSE', 'BUS_NAME', 'ADRS1']
-        string_obj = StringIO.StringIO()
-        with arcpy.da.SearchCursor(TempTable, TT_fieldnames) as TTSC:
-            for row in TTSC:
-                string_obj.write(''.join(row))
-                string_obj.write('\n')
+            #   Create the alert email text. Uses StringIO to create a string treated as a file for formatting purposes
 
-        report = string_obj.getvalue()
+            TT_fieldnames =['PARCEL_ID', 'LICENSE', 'BUS_NAME', 'ADRS1']
+            string_obj = StringIO.StringIO()
+            with arcpy.da.SearchCursor(TempTable, TT_fieldnames) as TTSC:
+                for row in TTSC:
+                    string_obj.write(''.join(row))
+                    string_obj.write('\n')
 
-        today = datetime.datetime.now().strftime("%m-%d-%Y" )
-        subject = 'Alcohol License report ' + today
-        sendto = ["cdglass@wpb.org","jssawyer@wpb.org"]
-        sender = 'scriptmonitorwpb@gmail.com'
-        sender_pw = "Bibby1997"
-        server = 'smtp.gmail.com'
-        body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list of the new licenses." \
-                    "\nThese have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t" \
-                    "Business Name\t\tAddress\n\n{3}".format(sender, sendto, subject, report)
+            report = string_obj.getvalue()
 
-        gmail = smtplib.SMTP(server, 587)
-        gmail.starttls()
-        gmail.login(sender, sender_pw)
-        gmail.sendmail(sender, sendto, body_text)
-        gmail.quit()
+            sendMail('Alcohol License report',
+                     ["cdglass@wpb.org", "jssawyer@wpb.org"],
+                     "These have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t" \
+                        "Business Name\t\tAddress",
+                     report)
+            #
+            # today = datetime.datetime.now().strftime("%m-%d-%Y" )
+            # subject = 'Alcohol License report ' + today
+            # sendto = ["cdglass@wpb.org","jssawyer@wpb.org"]
+            # sender = 'scriptmonitorwpb@gmail.com'
+            # sender_pw = "Bibby1997"
+            # server = 'smtp.gmail.com'
+            # body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list of the new licenses." \
+            #             "\nThese have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t" \
+            #             "Business Name\t\tAddress\n\n{3}".format(sender, sendto, subject, report)
+            #
+            # gmail = smtplib.SMTP(server, 587)
+            # gmail.starttls()
+            # gmail.login(sender, sender_pw)
+            # gmail.sendmail(sender, sendto, body_text)
+            # gmail.quit()
 
-        with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
-            now = datetime.datetime.now().strftime("%m-%d-%Y")
-            log.write("\n------------------------------------------\n\n")
-            log.write(now)
-            log.write('\n')
-            log.write(report)
-            log.write("\n")
+            with open(logfile, "a") as log:
+                now = datetime.datetime.now().strftime("%m-%d-%Y")
+                log.write("\n------------------------------------------\n\n")
+                log.write(now)
+                log.write('\n')
+                log.write(report)
+                log.write("\n")
 
-    #   This section will delete from alcohol_license_complus and Planning.SDE.WPB_GIS_ALCOHOL_LICENSES any records that
-    #   exists in Planning SDE but not in Complus (probably due to status change in complus)
+        #   This section will delete from alcohol_license_complus and Planning.SDE.WPB_GIS_ALCOHOL_LICENSES any records that
+        #   exists in Planning SDE but not in Complus (probably due to status change in complus)
 
-    if len(InSDE_NotInComplus) == 0:
-        print 'All licenses in SDE found in Commplus, no deletions needed'
-    else:
-        print 'Licenses found in SDE that dne is Commplus, deleting from SDE'
-        InSDE_query_tup = tuple({record[0].encode('ascii').rstrip() for record in InSDE_NotInComplus})
-        print InSDE_query_tup
-        if len(InSDE_query_tup) == 1:
-            InSDE_query = "LICENSE = '{}'".format(InSDE_query_tup[0])
+        if len(InSDE_NotInComplus) == 0:
+            print 'All licenses in SDE found in Commplus, no deletions needed'
         else:
-            InSDE_query = "LICENSE IN {}".format(InSDE_query_tup)
-        alco_license_lyr = arcpy.MakeFeatureLayer_management(alco_license, 'alco_license_lyr')
-        arcpy.SelectLayerByAttribute_management(alco_license_lyr, "NEW_SELECTION", InSDE_query)
-        #   following logic ensures there is a selection whose quantity equals number of licenses to remove so that
-        #   DeleteFeatures doesn't delete entire fc. That's never happened. ever.
-        if int(arcpy.GetCount_management(alco_license_lyr)[0]) == (len(InSDE_NotInComplus)):
-            arcpy.DeleteFeatures_management(alco_license_lyr)
-        else:
-            print "count of selected records in alco_license_lyr != len(InSDE_notInComplus) line 156"
-        alco_license_tblview = arcpy.MakeTableView_management(Planning_Alcohol_License_fullpath, 'alco_license_tblview')
-        arcpy.SelectLayerByAttribute_management(alco_license_tblview, "NEW_SELECTION", InSDE_query)
-        if int(arcpy.GetCount_management(alco_license_tblview)[0]) == (len(InSDE_NotInComplus)):
-            arcpy.DeleteRows_management(alco_license_tblview)
-        else:
-            print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 164"
+            print 'Licenses found in SDE that dne is Commplus, deleting from SDE'
+            InSDE_query_tup = tuple({record[0].encode('ascii').rstrip() for record in InSDE_NotInComplus})
+            print InSDE_query_tup
+            if len(InSDE_query_tup) == 1:
+                InSDE_query = "LICENSE = '{}'".format(InSDE_query_tup[0])
+            else:
+                InSDE_query = "LICENSE IN {}".format(InSDE_query_tup)
+            alco_license_lyr = arcpy.MakeFeatureLayer_management(alco_license, 'alco_license_lyr')
+            arcpy.SelectLayerByAttribute_management(alco_license_lyr, "NEW_SELECTION", InSDE_query)
+            #   following logic ensures there is a selection whose quantity equals number of licenses to remove so that
+            #   DeleteFeatures doesn't delete entire fc. That's never happened. ever.
+            if int(arcpy.GetCount_management(alco_license_lyr)[0]) == (len(InSDE_NotInComplus)):
+                arcpy.DeleteFeatures_management(alco_license_lyr)
+            else:
+                print "count of selected records in alco_license_lyr != len(InSDE_notInComplus) line 156"
+            alco_license_tblview = arcpy.MakeTableView_management(Planning_Alcohol_License_fullpath, 'alco_license_tblview')
+            arcpy.SelectLayerByAttribute_management(alco_license_tblview, "NEW_SELECTION", InSDE_query)
+            if int(arcpy.GetCount_management(alco_license_tblview)[0]) == (len(InSDE_NotInComplus)):
+                arcpy.DeleteRows_management(alco_license_tblview)
+            else:
+                print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 164"
 
-        today = datetime.datetime.now().strftime("%m-%d-%Y")
-        subject = 'Alcohol License App deleted licenses ' + today
-        sendto = ['cdglass@wpb.org','jssawyer@wpb.org']  # ,'JJudge@wpb.org','NKerr@wpb.org'
-        sender = 'scriptmonitorwpb@gmail.com'
-        sender_pw = "Bibby1997"
-        server = 'smtp.gmail.com'
-        body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list license numbers of the deleted records." \
-                    "\nThese have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
-                    "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:\n{3}".format(sender, sendto, subject, InSDE_query_tup)
+            sendmail("Alcohol License App deleted licenses",
+                     ['cdglass@wpb.org', 'jssawyer@wpb.org'],
+                     "These have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
+                        "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:",
+                     "{}".format(InSDE_query_tup))
 
-        gmail = smtplib.SMTP(server, 587)
-        gmail.starttls()
-        gmail.login(sender, sender_pw)
-        gmail.sendmail(sender, sendto, body_text)
-        gmail.quit()
 
-        with open(r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt", "a") as log:
-            now = datetime.datetime.now().strftime("%m-%d-%Y")
-            log.write("\n------------------------------------------\n\n")
-            log.write(now)
-            log.write('\n')
-            log.write('This license has been deleted:')
-            log.write(str(InSDE_query_tup))
-            log.write("\n")
 
-except Exception as E:
+            # today = datetime.datetime.now().strftime("%m-%d-%Y")
+            # subject = 'Alcohol License App deleted licenses ' + today
+            # sendto = ['cdglass@wpb.org','jssawyer@wpb.org']  # ,'JJudge@wpb.org','NKerr@wpb.org'
+            # sender = 'scriptmonitorwpb@gmail.com'
+            # sender_pw = "Bibby1997"
+            # server = 'smtp.gmail.com'
+            # body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nHere is a list license numbers of the deleted records." \
+            #             "\nThese have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
+            #             "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:\n{3}".format(sender, sendto, subject, InSDE_query_tup)
+            #
+            # gmail = smtplib.SMTP(server, 587)
+            # gmail.starttls()
+            # gmail.login(sender, sender_pw)
+            # gmail.sendmail(sender, sendto, body_text)
+            # gmail.quit()
+
+            with open(logfile, "a") as log:
+                now = datetime.datetime.now().strftime("%m-%d-%Y")
+                log.write("\n------------------------------------------\n\n")
+                log.write(now)
+                log.write('\n')
+                log.write('This license has been deleted:')
+                log.write(str(InSDE_query_tup))
+                log.write("\n")
+
+    except Exception as E:
+        sendMail("Alcohol License script failure report",
+                 "jssawyer@wpb.org",
+                 "An error occurred. Here are the Type, arguments, and log of the errors",
+                 "\n{0}\n{1}\n{2}".format(type(E).__name__ ,E.args,traceback.format_exc()))
+
+        # today = datetime.datetime.now().strftime("%m-%d-%Y")
+        # subject = 'Alcohol License script failure report ' + today
+        # sendto = "jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'
+        # sender = 'scriptmonitorwpb@gmail.com'
+        # sender_pw = "Bibby1997"
+        # server = 'smtp.gmail.com'
+        # log = traceback.format_exc()
+        # body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nAn error occured. Here are the Type, arguments, and log of " \
+        #             "the error\n\n{3}\n{4}\n{5}".format(sender, sendto, subject,type(E).__name__, E.args, log)
+        #
+        # gmail = smtplib.SMTP(server, 587)
+        # gmail.starttls()
+        # gmail.login(sender, sender_pw)
+        # gmail.sendmail(sender, sendto, body_text)
+        # gmail.quit()
+
+    finally:
+        del_list = (alco_licence_poly, alco_license_points)
+        for fc in del_list:
+            arcpy.Delete_management(fc)
+
+
+
+def sendMail(subject_param, sendto_param, body_text_param, report_param):
     today = datetime.datetime.now().strftime("%m-%d-%Y")
-    subject = 'Alcohol License script failure report ' + today
-    sendto = "jssawyer@wpb.org" # ,'JJudge@wpb.org','NKerr@wpb.org'
+    subject = "{} {}".format(subject_param, today)
     sender = 'scriptmonitorwpb@gmail.com'
-    sender_pw = "Bibby1997"
+    sender_pw = 'Bibby1997'
     server = 'smtp.gmail.com'
-    log = traceback.format_exc()
-    body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\nAn error occured. Here are the Type, arguments, and log of " \
-                "the error\n\n{3}\n{4}\n{5}".format(sender, sendto, subject,type(E).__name__, E.args, log)
+    body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\n" \
+                "\n{3}\n{4}" \
+        .format(sender, sendto_param, subject, body_text_param, report_param)
 
     gmail = smtplib.SMTP(server, 587)
     gmail.starttls()
     gmail.login(sender, sender_pw)
-    gmail.sendmail(sender, sendto, body_text)
+    gmail.sendmail(sender, sendto_param, body_text)
     gmail.quit()
 
-    print body_text
 
-finally:
-    del_list = (alco_licence_poly, alco_license_points)
-    for fc in del_list:
-        arcpy.Delete_management(fc)
+main()

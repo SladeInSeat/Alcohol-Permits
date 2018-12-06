@@ -167,11 +167,11 @@ def main():
             else:
                 print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 164"
 
-            sendmail("Alcohol License App deleted licenses",
-                     ['cdglass@wpb.org', 'jssawyer@wpb.org'],
-                     "These have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
-                        "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:",
-                     "{}".format(InSDE_query_tup))
+            sendMail("Alcohol License App deleted licenses",
+                 ['cdglass@wpb.org', 'jssawyer@wpb.org'],
+                 "These have been deleted from Planning.SDE.AlcoholLicense_complus feature class and " \
+                    "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:",
+                 "{}".format(InSDE_query_tup))
 
 
 

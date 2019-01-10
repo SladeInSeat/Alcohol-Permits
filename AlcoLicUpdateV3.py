@@ -3,6 +3,9 @@ import smtplib
 import traceback
 import datetime
 import StringIO
+import getpass
+import os
+
 
 #   settings
 arcpy.env.workspace = r"Database Connections\SDE@Planning_CLUSTER.sde"
@@ -152,7 +155,8 @@ def main():
                 print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 164"
 
             sendMail("Alcohol License App deleted licenses",
-                 ['cdglass@wpb.org', 'jssawyer@wpb.org'],
+                     'jssawyer@wpb.org',
+                 #['cdglass@wpb.org', 'jssawyer@wpb.org'],
                  "These have been deleted from Planning.SDE.AlcoholLicense_complus feature class and "
                     "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:",
                  "{}".format(InSDE_query_tup))
@@ -184,7 +188,7 @@ def sendMail(subject_param, sendto_param, body_text_param, report_param):
     sender = 'scriptmonitorwpb@gmail.com'
     sender_pw = 'Bibby1997'
     server = 'smtp.gmail.com'
-    body_text = "From: {0}\r\nTo: {1}\r\nSubject: {2}\r\n" \
+    body_text = "From: {0}\nTo: {1}\nSubject: {2}\n" \
                 "\n{3}\n{4}" \
         .format(sender, sendto_param, subject, body_text_param, report_param)
 

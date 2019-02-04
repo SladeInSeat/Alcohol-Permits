@@ -25,7 +25,7 @@ spatialref = arcpy.Describe(r"Database Connections\SDE@Planning_CLUSTER.sde\Plan
                               spatialReference.exportToString()
 Planning_Alcohol_License_fullpath = r"Database Connections\SDE@Planning_CLUSTER.sde\Planning.SDE." \
                                     r"WPB_GIS_ALCOHOL_LICENSES"
-logfile = r"C:\Users\jsawyer\Desktop\Tickets\alcohol permits\logfile.txt"
+logfile = r"Q:\log_files\Alcohol_Licences\logfile.txt"
 #   following query created with help from Planning Dept. For details on value meanings, ask them.
 Sql_copytable = "CATEGORY IN  ('AAM','445310','424810','312130','424820','445310','722410','312120','312140') AND" \
                 " STAT IN ('ACTIVE','PRINTED','HOLD')"

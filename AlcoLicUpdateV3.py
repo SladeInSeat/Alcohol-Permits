@@ -38,11 +38,11 @@ def main():
 
         with arcpy.da.SearchCursor(ComPlus_BusiLic, 'LICENSE', Sql_copytable) as ComplusSC:
             for record in ComplusSC:
-                ComplusLicenses_set.add(record)
+                ComplusLicenses_set.add(record[0].strip())
 
         with arcpy.da.SearchCursor(Planning_AlcoLic, 'LICENSE') as PlanAlcSC:
             for record in PlanAlcSC:
-                PlanningLicenses_set.add(record)
+                PlanningLicenses_set.add(record[0].strip())
 
         #   Compare the two sets, perform set calculations to discover differences (if any)
 
@@ -107,12 +107,13 @@ def main():
             string_obj = StringIO.StringIO()
             with arcpy.da.SearchCursor(TempTable, TT_fieldnames) as TTSC:
                 for row in TTSC:
-                    string_obj.write(''.join(row))
-                    string_obj.write('\n')
+                    string_obj.write('\t'.join(row))
+                    string_obj.write('\n\n')
 
             report = string_obj.getvalue()
 
             sendMail('Alcohol License report',
+                     # 'jssawyer@wpb.org',
                      ["cdglass@wpb.org", "jssawyer@wpb.org"],
                      "These have been added to AlcoholLicense_complus:\n\nPCN\t\t\tLicense\t\t"
                         "Business Name\t\tAddress",
@@ -147,6 +148,7 @@ def main():
                 arcpy.DeleteFeatures_management(alco_license_lyr)
             else:
                 print "count of selected records in alco_license_lyr != len(InSDE_notInComplus) line 156"
+
             alco_license_tblview = arcpy.MakeTableView_management(Planning_Alcohol_License_fullpath, 'alco_license_tblview')
             arcpy.SelectLayerByAttribute_management(alco_license_tblview, "NEW_SELECTION", InSDE_query)
             if int(arcpy.GetCount_management(alco_license_tblview)[0]) == (len(InSDE_NotInComplus)):
@@ -154,9 +156,10 @@ def main():
             else:
                 print "count of selected records in grouphomes_tbleview != len(InSDE_NotInComplus) line 164"
 
+
             sendMail("Alcohol License App deleted licenses",
-                     'jssawyer@wpb.org',
-                 #['cdglass@wpb.org', 'jssawyer@wpb.org'],
+                     # 'jssawyer@wpb.org',
+                 ['cdglass@wpb.org', 'jssawyer@wpb.org'],
                  "These have been deleted from Planning.SDE.AlcoholLicense_complus feature class and "
                     "Planning.SDE.WPB_GIS_ALCOHOL_LICENSES:",
                  "{}".format(InSDE_query_tup))

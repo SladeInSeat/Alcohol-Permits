@@ -66,7 +66,7 @@ def main():
             #   change list to a tuple (in preparation of creating a text string for the query). Delta is in unicode, need
             #   it in plain ascii text for query
 
-            InComplus_NotInSDE_tuple = tuple({license[0].encode('ascii') for license in InComplus_NotInSDE})
+            InComplus_NotInSDE_tuple = tuple({license.encode('ascii') for license in InComplus_NotInSDE})
             if len(InComplus_NotInSDE_tuple) == 1:
                 sqlquery = "LICENSE = '{}'".format(InComplus_NotInSDE_tuple[0])
             else:
@@ -134,7 +134,7 @@ def main():
             print 'All licenses in SDE found in Commplus, no deletions needed'
         else:
             print 'Licenses found in SDE that dne is Commplus, deleting from SDE'
-            InSDE_query_tup = tuple({record[0].encode('ascii').rstrip() for record in InSDE_NotInComplus})
+            InSDE_query_tup = tuple({record.encode('ascii').rstrip() for record in InSDE_NotInComplus})
             print InSDE_query_tup
             if len(InSDE_query_tup) == 1:
                 InSDE_query = "LICENSE = '{}'".format(InSDE_query_tup[0])

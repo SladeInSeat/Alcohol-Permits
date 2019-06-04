@@ -188,8 +188,8 @@ def main():
 def sendMail(subject_param, sendto_param, body_text_param, report_param):
     today = datetime.datetime.now().strftime("%m-%d-%Y")
     subject = "{} {}".format(subject_param, today)
-    sender = 'scriptmonitorwpb@gmail.com'
-    sender_pw = 'Bibby1997'
+    sender = '****'
+    sender_pw = '****'
     server = 'smtp.gmail.com'
     body_text = "From: {0}\nTo: {1}\nSubject: {2}\n" \
                 "\n{3}\n{4}" \
